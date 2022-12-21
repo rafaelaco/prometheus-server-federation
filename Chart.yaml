@@ -1,0 +1,8 @@
+apiVersion: v2
+name: prometheus-server
+description: This Chart Deploys a Prometheus Server with Federation configuration
+type: application
+version: 1.0.0
+appVersion: 2.40.7
+sources:
+  - https://github.com/rafaelaco/prometheus-server-federation

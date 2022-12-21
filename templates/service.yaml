@@ -1,0 +1,21 @@
+{{- range $index, $item := .Values.prometheusInstances }}
+{{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
+spec:
+  selector:
+{{ include "common.selectorLabels" (dict "releaseName" $.Release.Name) | indent 4 }}
+{{ printf "type: %s" $item.type | indent 4 }}
+{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 4 }}
+  type: ClusterIP
+  ports:
+    - port: 9090
+      targetPort: 9090
+{{- end }}
+{{- end }}

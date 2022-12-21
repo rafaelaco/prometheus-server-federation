@@ -1,0 +1,54 @@
+{{- range $index, $item := .Values.prometheusInstances }}
+{{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+spec:
+  capacity:
+    storage: {{ default "1Gi" $item.persistentVolumeCapacity }}
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  {{ if eq $.Values.developmentMode true }}
+  hostPath:
+    path: {{ $.Values.developmentHostPath }}/{{ $item.type }}-{{ $index }}-{{ $indexShard }}/
+  {{ else }}
+  storageClassName: azurefile-csi
+  csi:
+    driver: file.csi.azure.com
+    readOnly: false
+    volumeHandle: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+    volumeAttributes:
+      resourceGroup: {{ $.Values.azurePersistentVolumeResourceGroup }}
+      storageAccount: {{ $.Values.azurePersistentVolumeStorageAccount }}
+      shareName: {{ $.Values.azurePersistentVolumeShareName }}
+      protocol: smb
+  mountOptions:
+    - dir_mode=0777
+    - file_mode=0777
+    - uid=0
+    - gid=0
+    - mfsymlinks
+    - cache=strict
+    - nosharesock
+    - nobrl
+  {{ end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: {{ default "1Gi" $item.persistentVolumeCapacity }}
+  volumeName: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+  {{ if eq $.Values.developmentMode false }}
+  storageClassName: azurefile-csi
+  {{ end }}
+{{- end }}
+{{- end }}

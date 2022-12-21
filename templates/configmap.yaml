@@ -1,0 +1,221 @@
+{{- range $index, $item := .Values.prometheusInstances }}
+{{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
+data:
+  rules.yml: |
+    groups:
+    - name: "istio.recording-rules"
+      interval: 1m
+      rules:
+      - record: "workload:istio_requests_total"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_requests_total)
+
+      - record: "workload:istio_request_duration_milliseconds_count"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_count)
+
+      - record: "workload:istio_request_duration_milliseconds_sum"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_sum)
+
+      - record: "workload:istio_request_duration_milliseconds_bucket"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_bucket)
+
+      - record: "workload:istio_request_bytes_count"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_count)
+
+      - record: "workload:istio_request_bytes_sum"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_sum)
+
+      - record: "workload:istio_request_bytes_bucket"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_bucket)
+
+      - record: "workload:istio_response_bytes_count"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_count)
+
+      - record: "workload:istio_response_bytes_sum"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_sum)
+
+      - record: "workload:istio_response_bytes_bucket"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_bucket)
+
+      - record: "workload:istio_tcp_sent_bytes_total"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_sent_bytes_total)
+
+      - record: "workload:istio_tcp_received_bytes_total"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_received_bytes_total)
+
+      - record: "workload:istio_tcp_connections_opened_total"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_opened_total)
+
+      - record: "workload:istio_tcp_connections_closed_total"
+        expr: |
+          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_closed_total)
+
+
+  prometheus.yml: |
+    {{ if eq $item.type "primary" }}
+    global:
+      scrape_interval: 1m
+      scrape_timeout: 5s
+      evaluation_interval: 10m
+
+    scrape_configs:
+    - job_name: prometheus
+      honor_timestamps: true
+      metrics_path: /metrics
+      scheme: http
+      follow_redirects: true
+      enable_http2: true
+      static_configs:
+      - targets:
+        - localhost:9090
+    - job_name: federate
+      metrics_path: '/federate'
+      honor_labels: true
+      params:
+        'match[]':
+          - '{__name__=~"workload:(.*)"}'
+      metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'workload:(.*)'
+        target_label: __name__
+        action: replace
+      static_configs:
+        - targets:
+          {{- range $targetIndex, $targetItem := $.Values.prometheusInstances }}
+          {{ if eq $targetItem.type "replica" }}
+          {{- range $targetShardIndex, $ee := until (int (coalesce $targetItem.shards 1)) }}
+          - '{{ include "common.name" . }}-{{ $targetItem.type }}-{{ $targetIndex }}-{{ $targetShardIndex }}:9090'
+          {{ end }}
+          {{ end }}
+          {{- end }}
+    {{ end }}
+    {{ if eq $item.type "replica" }}
+    global:
+      scrape_interval: 1m
+      scrape_timeout: 5s
+      evaluation_interval: 10m
+      {{ if $item.shards }}
+      external_labels:
+        shard: {{ $indexShard }}
+      {{ end }}
+
+    rule_files:
+      - /etc/prometheus/rules.yml
+
+    scrape_configs:
+    - job_name: prometheus
+      honor_timestamps: true
+      metrics_path: /metrics
+      scheme: http
+      follow_redirects: true
+      enable_http2: true
+      static_configs:
+      - targets:
+        - localhost:9090
+    {{ range $jobIndex, $job := $item.jobs }}
+    - job_name: kubernetes-pods-{{ $jobIndex }}
+      honor_labels: true
+      kubernetes_sd_configs:
+        - role: pod
+          {{ if $job.namespacesToScrape }}
+          namespaces:
+            names:
+            {{ range $ns := $job.namespacesToScrape }}
+              - {{ $ns | quote }}
+            {{ end }}
+          {{ end }}
+          {{ if $job.labelsToScrape }}
+          selectors:
+            {{ range $label := $job.labelsToScrape }}
+            - role: "pod"
+              label: {{ $label | quote }}
+            {{ end }}
+          {{ end }}
+      metric_relabel_configs:
+        - action: drop
+          source_labels: [__name__]
+          regex: istio_agent_.*|istiod_.*|istio_build|citadel_.*|galley_.*|pilot_[^p].*|envoy_cluster_[^u].*|envoy_cluster_update.*|envoy_listener_[^dh].*|envoy_server_[^mu].*|envoy_wasm_.*
+        - action: labeldrop
+          regex: pod_template_hash|app|chart|destination_app|destination_version|heritage|.*operator.*|istio.*|release|security_istio_io_.*|service_istio_io_.*|sidecar_istio_io_inject|source_app|source_version
+        - action: replace
+          regex: prometheus
+          replacement: prometheus
+          source_labels:
+          - source_canonical_service
+          target_label: source_workload
+      relabel_configs:
+        {{ if $item.shards }}
+        - action: hashmod
+          source_labels: [__address__]
+          modulus: {{ $item.shards }}
+          target_label: __tmp_hashmod
+        - action: keep
+          source_labels: [__tmp_hashmod]
+          regex: {{ $indexShard }}
+        {{ end }}
+        - action: drop
+          regex: 53
+          source_labels:
+          - __meta_kubernetes_pod_container_port_number
+        - action: replace
+          regex: coredns
+          replacement: true
+          source_labels:
+          - __meta_kubernetes_pod_container_name
+          target_label: __meta_kubernetes_pod_annotation_prometheus_io_scrape
+        - action: keep
+          regex: true
+          source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scrape
+        - action: replace
+          regex: (https?)
+          source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_scheme
+          target_label: __scheme__
+        - action: replace
+          regex: (.+)
+          source_labels:
+          - __meta_kubernetes_pod_annotation_prometheus_io_path
+          target_label: __metrics_path__
+        - action: replace
+          regex: ([^:]+)(?::\d+)?;(\d+)
+          replacement: $1:$2
+          source_labels:
+          - __address__
+          - __meta_kubernetes_pod_annotation_prometheus_io_port
+          target_label: __address__
+        - action: labelmap
+          regex: __meta_kubernetes_pod_label_(.+)
+        - action: replace
+          source_labels:
+          - __meta_kubernetes_namespace
+          target_label: kubernetes_namespace
+        - action: replace
+          source_labels:
+          - __meta_kubernetes_pod_name
+          target_label: kubernetes_pod_name
+        - action: drop
+          regex: Pending|Succeeded|Failed
+          source_labels:
+          - __meta_kubernetes_pod_phase
+    {{ end }}
+    {{ end }}
+{{- end }}
+{{- end }}

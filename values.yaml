@@ -1,0 +1,50 @@
+# Readiness and Liveness configuration
+readinessProbeInitialDelaySeconds: 15
+readinessProbePeriodSeconds: 5
+readinessProbeTimeoutSeconds: 4
+readinessProbeFailureThreshold: 3
+readinessProbeSuccessThreshold: 1
+livenessProbeInitialDelaySeconds: 30
+livenessProbePeriodSeconds: 15
+livenessProbeTimeoutSeconds: 10
+livenessProbeFailureThreshold: 3
+livenessProbeSuccessThreshold: 1
+
+# Image repository and version
+image:
+  repository: prom
+  tag: v2.40.7
+  pullPolicy: IfNotPresent
+  pullSecrets: []
+
+# Instances configuration
+# You have to configure only one with the type=primary
+# And you can configure as many as you want of the type=replica
+# The "shards" value inside the "jobs" will split the discovery endpoint between instances
+prometheusInstances:
+  - type: primary
+    storageTsdbRetentionSize: "5d"
+
+  - type: replica
+    namespaceToScrape: [kube-system]
+    labelToScrape: "k8s-app=kube-dns"
+    storageTsdbRetentionSize: "1d"
+
+  - type: replica
+    namespaceToScrape: [microservices]
+    shards: 5
+    storageTsdbRetentionSize: "1d"
+
+# Azure Persistent Volume settings
+azurePersistentVolumeResourceGroup: ""
+azurePersistentVolumeStorageAccount: ""
+azurePersistentVolumeShareName: ""
+
+# Environment variables
+environmentVariables:
+  - name: GOGC # GOGC will overrides the default Golang Garbage Collector value
+    value: 40
+
+# Development settings
+developmentMode: false
+developmentHostPath: "/tmp/data"
