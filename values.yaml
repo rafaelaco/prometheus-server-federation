@@ -26,12 +26,12 @@ prometheusInstances:
     storageTsdbRetentionSize: "5d"
 
   - type: replica
-    namespaceToScrape: [kube-system]
-    labelToScrape: "k8s-app=kube-dns"
+    namespacesToScrape: [kube-system]
+    labelsToScrape: ["k8s-app=kube-dns"]
     storageTsdbRetentionSize: "1d"
 
   - type: replica
-    namespaceToScrape: [microservices]
+    namespacesToScrape: [microservices]
     shards: 5
     storageTsdbRetentionSize: "1d"
 
