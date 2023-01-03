@@ -24,6 +24,9 @@ image:
 prometheusInstances:
   - type: primary
     storageTsdbRetentionSize: "5d"
+    environmentVariables:
+      - name: GOGC
+        value: 40
 
   - type: replica
     namespacesToScrape: [kube-system]
@@ -39,11 +42,6 @@ prometheusInstances:
 azurePersistentVolumeResourceGroup: ""
 azurePersistentVolumeStorageAccount: ""
 azurePersistentVolumeShareName: ""
-
-# Environment variables
-environmentVariables:
-  - name: GOGC # GOGC will overrides the default Golang Garbage Collector value
-    value: 40
 
 # Development settings
 developmentMode: false

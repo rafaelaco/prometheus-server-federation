@@ -44,9 +44,9 @@ spec:
           readOnly: false
       containers:
       - name: {{ include "common.name" . }}
-        {{ if $.Values.environmentVariables }}
+        {{ if $item.environmentVariables }}
         env:
-          {{ range $env := $.Values.environmentVariables }}
+          {{ range $env := $item.environmentVariables }}
           - name: {{ $env.name | quote }}
             value: {{ $env.value | quote }}
           {{ end }}
