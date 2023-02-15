@@ -1,3 +1,6 @@
+# General settings
+replicaDaemonSet: true
+
 # Readiness and Liveness configuration
 readinessProbeInitialDelaySeconds: 15
 readinessProbePeriodSeconds: 5
@@ -17,26 +20,45 @@ image:
   pullPolicy: IfNotPresent
   pullSecrets: []
 
-# Instances configuration
+### Instances configuration - Dynamic instances option (replicaDaemonSet=true)
 # You have to configure only one with the type=primary
-# And you can configure as many as you want of the type=replica
-# The "shards" value inside the "jobs" will split the discovery endpoint between instances
+# and only one of type=replica (that will be DaemonSet)
 prometheusInstances:
   - type: primary
-    storageTsdbRetentionSize: "5d"
+    storageTsdbRetentionTime: "5d"
     environmentVariables:
       - name: GOGC
         value: 40
 
   - type: replica
-    namespacesToScrape: [kube-system]
-    labelsToScrape: ["k8s-app=kube-dns"]
-    storageTsdbRetentionSize: "1d"
+    storageTsdbRetentionTime: "1d"
+    jobs:
+      - namespacesToScrape: [kube-system]
+        labelsToScrape: ["k8s-app=kube-dns"]
+      - namespacesToScrape: [default, microservices]
 
-  - type: replica
-    namespacesToScrape: [microservices]
-    shards: 5
-    storageTsdbRetentionSize: "1d"
+### Instances configuration - Fixed instances option (replicaDaemonSet=false)
+# You have to configure only one with the type=primary
+# And you can configure as many as you want of the type=replica
+# The "shards" value inside the "jobs" will split the discovery endpoint between instances
+# prometheusInstances:
+#   - type: primary
+#     storageTsdbRetentionTime: "5d"
+#     environmentVariables:
+#       - name: GOGC
+#         value: 40
+
+#   - type: replica
+#     storageTsdbRetentionTime: "1d"
+#     jobs:
+#       - namespacesToScrape: [kube-system]
+#         labelsToScrape: ["k8s-app=kube-dns"]
+
+#   - type: replica
+#     shards: 5
+#     storageTsdbRetentionTime: "1d"
+#     jobs:
+#       - namespacesToScrape: [microservices]
 
 # Azure Persistent Volume settings
 azurePersistentVolumeResourceGroup: ""
@@ -44,5 +66,5 @@ azurePersistentVolumeStorageAccount: ""
 azurePersistentVolumeShareName: ""
 
 # Development settings
-developmentMode: false
+developmentMode: true
 developmentHostPath: "/tmp/data"

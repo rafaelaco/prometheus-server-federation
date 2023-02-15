@@ -14,6 +14,7 @@ spec:
   {{ if eq $.Values.developmentMode true }}
   hostPath:
     path: {{ $.Values.developmentHostPath }}/{{ $item.type }}-{{ $index }}-{{ $indexShard }}/
+  storageClassName: manual
   {{ else }}
   storageClassName: azurefile-csi
   csi:
@@ -47,7 +48,9 @@ spec:
     requests:
       storage: {{ default "1Gi" $item.persistentVolumeCapacity }}
   volumeName: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
-  {{ if eq $.Values.developmentMode false }}
+  {{ if eq $.Values.developmentMode true }}
+  storageClassName: manual
+  {{ else }}
   storageClassName: azurefile-csi
   {{ end }}
 {{- end }}

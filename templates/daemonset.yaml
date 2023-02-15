@@ -1,18 +1,21 @@
 {{- range $index, $item := .Values.prometheusInstances }}
 {{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
-{{- if ne $.Values.replicaDaemonSet true }}
+{{- if eq $.Values.replicaDaemonSet true }}
 ---
 apiVersion: apps/v1
-kind: Deployment
+{{ if eq $item.type "primary" }}kind: Deployment{{ end }}
+{{ if eq $item.type "replica" }}kind: DaemonSet{{ end }}
 metadata:
   name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
   labels:
 {{ include "common.selectorLabels" (dict "releaseName" $.Release.Name) | indent 4 }}
 spec:
+  {{ if eq $item.type "primary" }}
   replicas: 1
   strategy:
     type: "Recreate"
     rollingUpdate: null
+  {{ end }}
   selector:
     matchLabels:
 {{ include "common.selectorLabels" (dict "releaseName" $.Release.Name) | indent 6 }}
@@ -30,6 +33,11 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
     spec:
+      {{ if eq $item.type "replica" }}
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+      {{ end }}
 {{- if $.Values.image.pullSecrets }}
       imagePullSecrets:
 {{ toYaml $.Values.image.pullSecrets | indent 8 }}
@@ -38,15 +46,43 @@ spec:
       initContainers:
       - name: prometheus-init
         image: alpine:3.17.0
-        command: ['sh', '-c', 'mkdir {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }} -p && exit 0']
+        {{ if eq $item.type "primary" }}
+        command: ['sh', '-c']
+        args:
+          - echo "## STARTING";
+            echo "# creating customization directory"; mkdir /persistent-volume/prometheus-customization -p;
+            echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/primary.yml;
+            echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }} -p;
+            echo "## DONE";
+        {{ else }}
+        command: ['sh', '-c']
+        args:
+          - echo "## STARTING";
+            echo "# creating customization directory"; mkdir /persistent-volume/prometheus-customization -p;
+            echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
+            echo "# replace environment variable"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
+            echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME) -p;
+            echo "## DONE";
+        {{ end }}
+        env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
         volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
         - name: prometheus-storage-volume
           mountPath: /persistent-volume
           readOnly: false
       containers:
       - name: {{ include "common.name" . }}
-        {{ if $item.environmentVariables }}
         env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        {{ if $item.environmentVariables }}
           {{ range $env := $item.environmentVariables }}
           - name: {{ $env.name | quote }}
             value: {{ $env.value | quote }}
@@ -83,8 +119,16 @@ spec:
         args:
           - '--storage.tsdb.retention.time={{ default "2h" $item.storageTsdbRetentionTime }}'
           - '--storage.tsdb.retention.size={{ default "50GB" $item.storageTsdbRetentionSize }}'
+          {{ if eq $item.type "primary" }}
           - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}'
-          - '--config.file=/etc/prometheus/prometheus.yml'
+          {{ else }}
+          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
+          {{ end }}
+          {{ if eq $item.type "primary" }}
+          - '--config.file=/persistent-volume/prometheus-customization/primary.yml'
+          {{ else }}
+          - '--config.file=/persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml'
+          {{ end }}
           - '--query.timeout={{ default "10s" $item.queryTimeout }}'
         ports:
         - name: prometheus
