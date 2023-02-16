@@ -32,6 +32,7 @@ prometheusInstances:
 
   - type: replica
     storageTsdbRetentionTime: "1d"
+    rulesFile: "files/rules-istio-coredns.yaml"
     jobs:
       - namespacesToScrape: [kube-system]
         labelsToScrape: ["k8s-app=kube-dns"]

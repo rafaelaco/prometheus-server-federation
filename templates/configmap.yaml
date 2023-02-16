@@ -6,67 +6,10 @@ kind: ConfigMap
 metadata:
   name: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
 data:
+{{ if $item.rulesFile }}
   rules.yml: |
-    groups:
-    - name: "istio.recording-rules"
-      interval: 1m
-      rules:
-      - record: "workload:istio_requests_total"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_requests_total)
-
-      - record: "workload:istio_request_duration_milliseconds_count"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_count)
-
-      - record: "workload:istio_request_duration_milliseconds_sum"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_sum)
-
-      - record: "workload:istio_request_duration_milliseconds_bucket"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_bucket)
-
-      - record: "workload:istio_request_bytes_count"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_count)
-
-      - record: "workload:istio_request_bytes_sum"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_sum)
-
-      - record: "workload:istio_request_bytes_bucket"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_bucket)
-
-      - record: "workload:istio_response_bytes_count"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_count)
-
-      - record: "workload:istio_response_bytes_sum"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_sum)
-
-      - record: "workload:istio_response_bytes_bucket"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_bucket)
-
-      - record: "workload:istio_tcp_sent_bytes_total"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_sent_bytes_total)
-
-      - record: "workload:istio_tcp_received_bytes_total"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_received_bytes_total)
-
-      - record: "workload:istio_tcp_connections_opened_total"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_opened_total)
-
-      - record: "workload:istio_tcp_connections_closed_total"
-        expr: |
-          sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_closed_total)
-
+{{ $.Files.Get $item.rulesFile | indent 4 }}
+{{ end }}
 
   prometheus.yml: |
     {{ if eq $item.type "primary" }}
@@ -91,6 +34,7 @@ data:
       params:
         'match[]':
           - '{__name__=~"workload:(.*)"}'
+          - '{__name__=~"instance:(.*)"}'
       metric_relabel_configs:
       - source_labels: [__name__]
         regex: 'workload:(.*)'
@@ -180,6 +124,12 @@ data:
           - __meta_kubernetes_pod_container_port_number
         - action: replace
           regex: coredns
+          replacement: true
+          source_labels:
+          - __meta_kubernetes_pod_container_name
+          target_label: __meta_kubernetes_pod_annotation_prometheus_io_scrape
+        - action: replace
+          regex: node-exporter
           replacement: true
           source_labels:
           - __meta_kubernetes_pod_container_name

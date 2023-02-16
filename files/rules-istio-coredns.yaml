@@ -1,0 +1,163 @@
+groups:
+- name: "istio.recording-rules"
+  interval: 1m
+  rules:
+  - record: "workload:istio_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_requests_total)
+
+  - record: "workload:istio_request_duration_milliseconds_count"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_count)
+
+  - record: "workload:istio_request_duration_milliseconds_sum"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_sum)
+
+  - record: "workload:istio_request_duration_milliseconds_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_duration_milliseconds_bucket)
+
+  - record: "workload:istio_request_bytes_count"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_count)
+
+  - record: "workload:istio_request_bytes_sum"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_sum)
+
+  - record: "workload:istio_request_bytes_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_request_bytes_bucket)
+
+  - record: "workload:istio_response_bytes_count"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_count)
+
+  - record: "workload:istio_response_bytes_sum"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_sum)
+
+  - record: "workload:istio_response_bytes_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_response_bytes_bucket)
+
+  - record: "workload:istio_tcp_sent_bytes_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_sent_bytes_total)
+
+  - record: "workload:istio_tcp_received_bytes_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_received_bytes_total)
+
+  - record: "workload:istio_tcp_connections_opened_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_opened_total)
+
+  - record: "workload:istio_tcp_connections_closed_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (istio_tcp_connections_closed_total)
+
+  - record: "workload:coredns_dns_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_requests_total)
+
+  - record: "workload:coredns_dns_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_requests_total)
+
+  - record: "workload:coredns_build_info"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_build_info)
+
+  - record: "workload:coredns_forward_healthcheck_broken_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_healthcheck_broken_total)
+
+  - record: "workload:coredns_forward_max_concurrent_rejects_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_max_concurrent_rejects_total)
+
+  - record: "workload:coredns_panics_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_panics_total)
+
+  - record: "workload:coredns_reload_failed_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_reload_failed_total)
+
+  - record: "workload:process_cpu_seconds_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (process_cpu_seconds_total)
+
+  - record: "workload:go_memstats_alloc_bytes"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (go_memstats_alloc_bytes)
+
+  - record: "workload:coredns_dns_request_duration_seconds_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_request_duration_seconds_bucket)
+
+  - record: "workload:coredns_cache_hits_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_cache_hits_total)
+
+  - record: "workload:coredns_cache_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_cache_requests_total)
+
+  - record: "workload:coredns_dnssec_cache_hits_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dnssec_cache_hits_total)
+
+  - record: "workload:coredns_cache_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_cache_requests_total)
+
+  - record: "workload:coredns_dns_do_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_do_requests_total)
+
+  - record: "workload:coredns_dns_responses_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_responses_total)
+
+  - record: "workload:coredns_dns_request_size_bytes_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_request_size_bytes_bucket)
+
+  - record: "workload:coredns_dns_response_size_bytes_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dns_response_size_bytes_bucket)
+
+  - record: "workload:coredns_cache_entries"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_cache_entries)
+
+  - record: "workload:coredns_dnssec_cache_entries"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_dnssec_cache_entries)
+
+  - record: "workload:coredns_forward_requests_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_requests_total)
+
+  - record: "workload:coredns_forward_conn_cache_hits_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_conn_cache_hits_total)
+
+  - record: "workload:coredns_forward_request_duration_seconds_bucket"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_request_duration_seconds_bucket)
+
+  - record: "workload:coredns_forward_responses_total"
+    expr: |
+      sum without(instance, kubernetes_namespace, kubernetes_pod_name) (coredns_forward_responses_total)
+
+  - record: "instance:node_nf_conntrack_entries"
+    expr: |
+      sum without(kubernetes_namespace, kubernetes_pod_name) (node_nf_conntrack_entries)
+
+  - record: "instance:node_nf_conntrack_entries_limit"
+    expr: |
+      sum without(kubernetes_namespace, kubernetes_pod_name) (node_nf_conntrack_entries_limit)
