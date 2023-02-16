@@ -14,9 +14,9 @@ data:
   prometheus.yml: |
     {{ if eq $item.type "primary" }}
     global:
-      scrape_interval: 1m
-      scrape_timeout: 5s
-      evaluation_interval: 10m
+      scrape_interval: {{ default "1m" $item.scrapeInterval }}
+      scrape_timeout: {{ default "5s" $item.scrapeTimeout }}
+      evaluation_interval: {{ default "10m" $item.evaluationInterval }}
 
     scrape_configs:
     - job_name: prometheus
@@ -60,9 +60,9 @@ data:
     {{ end }}
     {{ if eq $item.type "replica" }}
     global:
-      scrape_interval: 1m
-      scrape_timeout: 5s
-      evaluation_interval: 10m
+      scrape_interval: {{ default "1m" $item.scrapeInterval }}
+      scrape_timeout: {{ default "5s" $item.scrapeTimeout }}
+      evaluation_interval: {{ default "10m" $item.evaluationInterval }}
       {{ if $item.shards }}
       external_labels:
         shard: {{ $indexShard }}
