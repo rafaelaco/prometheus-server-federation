@@ -21,19 +21,21 @@ Open the [values.yaml](./values.yaml) file to see all the configuration options.
 ### Basic primary/replica setup
 
 ```yaml
-  prometheusInstances:
-    - type: primary
-      storageTsdbRetentionSize: "5d"
+prometheusInstances:
+  - type: primary
+    storageTsdbRetentionTime: "5d"
+    scrapeTimeout: 10s
+    environmentVariables:
+      - name: GOGC
+        value: 40
 
-    - type: replica
-      namespacesToScrape: [kube-system]
-      labelsToScrape: ["k8s-app=kube-dns"]
-      storageTsdbRetentionSize: "1d"
-
-    - type: replica
-      namespacesToScrape: [microservices]
-      shards: 5
-      storageTsdbRetentionSize: "1d"
+  - type: replica
+    storageTsdbRetentionTime: "1d"
+    rulesFile: "files/rules-istio-coredns.yaml"
+    jobs:
+      - namespacesToScrape: [kube-system]
+        labelsToScrape: ["k8s-app=kube-dns"]
+      - namespacesToScrape: [default, microservices]
 ```
 
 ### RBAC
