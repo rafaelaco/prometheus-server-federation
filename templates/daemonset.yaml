@@ -62,6 +62,7 @@ spec:
             echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# replace environment variable"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME) -p;
+            echo "# creating thanos sidecar directory"; mkdir /persistent-volume/thanos -p;
             echo "## DONE";
         {{ end }}
         env:
@@ -76,6 +77,33 @@ spec:
           mountPath: /persistent-volume
           readOnly: false
       containers:
+      {{ if eq $item.type "replica" }}
+      {{ if $.Values.thanos.enabled }}
+      - name: thanos-sidecar
+        image: "{{ $.Values.thanos.image.repository }}/thanos:{{ $.Values.thanos.image.tag }}"
+        env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        args:
+          - 'sidecar'
+          - '--tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
+          - '--prometheus.url=http://localhost:9090'
+          - '--http-address=0.0.0.0:19191'
+          - '--grpc-address=0.0.0.0:19090'
+          {{ if eq $.Values.developmentMode true }}
+          - |
+            --objstore.config=type: FILESYSTEM
+            config:
+              directory: "/persistent-volume/thanos"
+          {{ end }}
+        volumeMounts:
+          - name: prometheus-storage-volume
+            mountPath: /persistent-volume
+            readOnly: false
+      {{ end }}
+      {{ end }}
       - name: {{ include "common.name" . }}
         env:
           - name: CURRENT_NODE_NAME
@@ -120,14 +148,13 @@ spec:
           - '--storage.tsdb.retention.time={{ default "2h" $item.storageTsdbRetentionTime }}'
           - '--storage.tsdb.retention.size={{ default "50GB" $item.storageTsdbRetentionSize }}'
           {{ if eq $item.type "primary" }}
+          - '--config.file=/persistent-volume/prometheus-customization/primary.yml'
           - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}'
           {{ else }}
-          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
-          {{ end }}
-          {{ if eq $item.type "primary" }}
-          - '--config.file=/persistent-volume/prometheus-customization/primary.yml'
-          {{ else }}
           - '--config.file=/persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml'
+          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
+          - '--storage.tsdb.min-block-duration=2h'
+          - '--storage.tsdb.max-block-duration=2h'
           {{ end }}
           - '--query.timeout={{ default "10s" $item.queryTimeout }}'
         ports:

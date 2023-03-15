@@ -14,8 +14,21 @@ spec:
 {{ printf "type: %s" $item.type | indent 4 }}
 {{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 4 }}
   type: ClusterIP
+  {{ if eq $item.type "replica" }}
+  {{ if eq $.Values.replicaDaemonSet true }}
+  clusterIP: None
+  {{ end }}
+  {{ end }}
   ports:
-    - port: 9090
+    - name: prometheus
+      port: 9090
       targetPort: 9090
+    {{ if eq $item.type "replica" }}
+    {{ if eq $.Values.thanos.enabled true }}
+    - name: thanos
+      port: 19090
+      targetPort: 19090
+    {{ end }}
+    {{ end }}
 {{- end }}
 {{- end }}

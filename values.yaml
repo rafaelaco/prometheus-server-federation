@@ -16,6 +16,17 @@ livenessProbeTimeoutSeconds: 10
 livenessProbeFailureThreshold: 3
 livenessProbeSuccessThreshold: 1
 
+# Thanos
+thanos:
+  enabled: true
+  image:
+    repository: quay.io/thanos
+    tag: v0.30.2
+    pullPolicy: IfNotPresent
+    pullSecrets: []
+  query:
+    replicas: 1
+
 # Image repository and version
 image:
   repository: prom
@@ -35,6 +46,18 @@ prometheusInstances:
       - name: GOGC
         value: 40
 
+  - type: replica
+    storageTsdbRetentionTime: "1d"
+    scrapeInterval: 15s
+    rulesFile: "files/rules-istio-coredns.yaml"
+    jobs:
+      - namespacesToScrape: [kube-system]
+        labelsToScrape: ["k8s-app=kube-dns"]
+      - namespacesToScrape: [default, microservices]
+
+### Duplicated Prometheus DaemonSet
+# You can duplicate the replica configuration to add HA to your Prometheus DaemonSet
+# Thanos will handle the duplicated data, but we will make sure we have two HA to our prometheus setup
   - type: replica
     storageTsdbRetentionTime: "1d"
     scrapeInterval: 15s

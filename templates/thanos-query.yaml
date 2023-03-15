@@ -1,0 +1,43 @@
+{{- if eq .Values.thanos.enabled true }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.name" . }}-thanos-query
+  labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 4 }}
+spec:
+  replicas: {{ .Values.thanos.query.replicas }}
+  selector:
+    matchLabels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 6 }}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 8 }}
+    spec:
+      containers:
+      - name: thanos-query
+        image: "{{ .Values.thanos.image.repository }}/thanos:{{ .Values.thanos.image.tag }}"
+        env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        args:
+          - 'query'
+          - '--http-address=0.0.0.0:19192'
+          {{ range $index, $item := .Values.prometheusInstances }}
+          {{ if eq $item.type "replica" }}
+          - '--store=dnssrv+_thanos._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
+          {{ end }}
+          {{ end }}
+          - '--query.replica-label=replica'
+          {{ if .Values.externalLabels }}
+          {{ range $labelKey, $labelValue := .Values.externalLabels }}
+          - '--query.replica-label={{ $labelKey }}'
+          {{ end }}
+          {{ end }}
+{{ end }}

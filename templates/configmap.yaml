@@ -67,10 +67,15 @@ data:
       external_labels:
         shard: {{ $indexShard }}
       {{ else }}
+      {{ if $.Values.thanos.enabled }}
       external_labels:
+        {{ if $.Values.externalLabels }}
         {{ range $labelKey, $labelValue := $.Values.externalLabels }}
         {{ $labelKey }}: {{ $labelValue }}
         {{ end }}
+        {{ end }}
+        replica: ${CURRENT_NODE_NAME}-{{ $index }}
+      {{ end }}
       {{ end }}
 
     rule_files:
