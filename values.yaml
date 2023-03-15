@@ -1,5 +1,8 @@
 # General settings
 replicaDaemonSet: true
+externalLabels:
+  region: eastus2
+  cluster: local
 
 # Readiness and Liveness configuration
 readinessProbeInitialDelaySeconds: 15
@@ -27,12 +30,14 @@ prometheusInstances:
   - type: primary
     storageTsdbRetentionTime: "5d"
     scrapeTimeout: 10s
+    scrapeInterval: 15s
     environmentVariables:
       - name: GOGC
         value: 40
 
   - type: replica
     storageTsdbRetentionTime: "1d"
+    scrapeInterval: 15s
     rulesFile: "files/rules-istio-coredns.yaml"
     jobs:
       - namespacesToScrape: [kube-system]

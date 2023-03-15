@@ -66,6 +66,11 @@ data:
       {{ if $item.shards }}
       external_labels:
         shard: {{ $indexShard }}
+      {{ else }}
+      external_labels:
+        {{ range $labelKey, $labelValue := $.Values.externalLabels }}
+        {{ $labelKey }}: {{ $labelValue }}
+        {{ end }}
       {{ end }}
 
     rule_files:
