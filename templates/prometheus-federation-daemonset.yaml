@@ -66,6 +66,7 @@ spec:
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME) -p;
             echo "# creating thanos sidecar directory"; mkdir /persistent-volume/thanos -p;
             echo "# creating thanos store directory"; mkdir /persistent-volume/thanos-store -p;
+            echo "# creating thanos compactor directory"; mkdir /persistent-volume/thanos-compactor -p;
             echo "## DONE";
         {{ end }}
         env:

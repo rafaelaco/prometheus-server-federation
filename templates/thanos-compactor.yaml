@@ -1,0 +1,62 @@
+{{- if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.store.enabled true) }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "common.name" . }}-thanos-compactor
+  labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-compactor") | indent 4 }}
+spec:
+  schedule: {{ $.Values.thanos.compactor.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          annotations:
+            sidecar.istio.io/inject: "false"
+          labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-compactor") | indent 20 }}
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: thanos-compactor
+            image: "{{ $.Values.thanos.image.repository }}/thanos:{{ $.Values.thanos.image.tag }}"
+            env:
+              - name: CURRENT_NODE_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: spec.nodeName
+            volumeMounts:
+              - name: prometheus-storage-volume
+                mountPath: /persistent-volume
+                readOnly: false
+            args:
+              - 'compact'
+              - '--data-dir=/persistent-volume/thanos-compactor'
+              {{ if eq $.Values.developmentMode true }}
+              - |
+                --objstore.config=type: FILESYSTEM
+                config:
+                  directory: "/persistent-volume/thanos"
+              {{ end }}
+              - '--http-address=0.0.0.0:19191'
+            livenessProbe:
+              failureThreshold: 8
+              httpGet:
+                path: /-/healthy
+                port: 19191
+                scheme: HTTP
+              periodSeconds: 30
+              timeoutSeconds: 1
+            readinessProbe:
+              failureThreshold: 20
+              httpGet:
+                path: /-/ready
+                port: 19191
+                scheme: HTTP
+              periodSeconds: 5
+          volumes:
+          - name: prometheus-storage-volume
+            persistentVolumeClaim:
+              claimName: {{ include "common.name" . }}-replica-1-0
+{{- end }}

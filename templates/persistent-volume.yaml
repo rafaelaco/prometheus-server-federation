@@ -15,7 +15,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   {{ if eq $.Values.developmentMode true }}
   hostPath:
-    path: {{ $.Values.developmentHostPath }}/{{ $item.type }}-{{ $index }}-{{ $indexShard }}/
+    path: {{ $.Values.developmentHostPath }}
   storageClassName: manual
   {{ else }}
   storageClassName: azurefile-csi

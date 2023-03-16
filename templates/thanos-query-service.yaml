@@ -1,0 +1,18 @@
+{{- if eq .Values.thanos.enabled true }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}-thanos-query
+spec:
+  type: ClusterIP
+  ports:
+    - name: thanos-grpc
+      port: 19090
+      targetPort: 19090
+    - name: thanos-http
+      port: 19191
+      targetPort: 19191
+  selector:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 4 }}
+{{- end }}

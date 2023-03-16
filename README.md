@@ -1,6 +1,6 @@
 # Prometheus Federation
 
-This chart creates the [Prometheus Federation](https://prometheus.io/docs/prometheus/latest/federation/) structure, making possible to have multiple [Prometheus](https://prometheus.io/) instances running in the same kubernetes cluster.
+This chart creates the [Prometheus Federation](https://prometheus.io/docs/prometheus/latest/federation/) structure using the DaemonSet object, making possible to have multiple [Prometheus](https://prometheus.io/) instances running in the same kubernetes cluster also being able to configure [Thanos](https://thanos.io/). 
 
 ## Prerequisites
 

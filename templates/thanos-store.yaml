@@ -1,27 +1,22 @@
-{{- range $index, $item := .Values.prometheusInstances }}
-{{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
-{{- if eq $.Values.replicaDaemonSet true }}
-{{- if and (eq $.Values.thanos.enabled true) (eq $item.type "primary") }}
-{{- else }}
+{{- if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.store.enabled true) }}
 ---
 apiVersion: apps/v1
-kind: DaemonSet
+kind: Deployment
 metadata:
-  name: {{ include "common.name" . }}-thanos-store-{{ $index }}-{{ $indexShard }}
+  name: {{ include "common.name" . }}-thanos-store
   labels:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 4 }}
 spec:
+  replicas: 1
   selector:
     matchLabels:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 6 }}
-{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 6 }}
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "false"
       labels:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 8 }}
-{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 8 }}
     spec:
       containers:
       - name: thanos-store
@@ -64,8 +59,5 @@ spec:
       volumes:
       - name: prometheus-storage-volume
         persistentVolumeClaim:
-          claimName: {{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}
-{{- end }}
-{{- end }}
-{{- end }}
+          claimName: {{ include "common.name" . }}-replica-1-0
 {{- end }}

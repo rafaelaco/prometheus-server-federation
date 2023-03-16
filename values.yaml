@@ -26,6 +26,11 @@ thanos:
     pullSecrets: []
   query:
     replicas: 1
+  store:
+    enabled: true
+  compactor:
+    enabled: true
+    schedule: "* * * * *"
 
 # Image repository and version
 image:

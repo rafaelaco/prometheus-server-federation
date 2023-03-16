@@ -1,21 +1,5 @@
 {{- if eq .Values.thanos.enabled true }}
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ include "common.name" . }}-thanos-query
-spec:
-  type: ClusterIP
-  ports:
-    - name: thanos-grpc
-      port: 19090
-      targetPort: 19090
-    - name: thanos-http
-      port: 19191
-      targetPort: 19191
-  selector:
-{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 4 }}
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -49,8 +33,10 @@ spec:
           {{ range $index, $item := .Values.prometheusInstances }}
           {{ if eq $item.type "replica" }}
           - '--store=dnssrv+_thanos-grpc._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
-          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-thanos-store-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
           {{ end }}
+          {{ end }}
+          {{ if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.store.enabled true) }}
+          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-thanos-store.{{ $.Release.Namespace }}.svc'
           {{ end }}
           - '--query.replica-label=replica'
         livenessProbe:
