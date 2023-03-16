@@ -1,5 +1,13 @@
 {{- if eq .Values.thanos.enabled true }}
 ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}-thanos-query
+spec:
+  selector:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 4 }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
