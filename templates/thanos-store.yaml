@@ -35,7 +35,7 @@ spec:
             readOnly: false
         args:
           - 'store'
-          '--data-dir=/persistent-volume/thanos-store'
+          - '--data-dir=/persistent-volume/thanos-store'
           {{ if eq $.Values.developmentMode true }}
           - |
             --objstore.config=type: FILESYSTEM
