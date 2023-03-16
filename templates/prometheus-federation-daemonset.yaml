@@ -63,7 +63,7 @@ spec:
             echo "# creating customization directory"; mkdir /persistent-volume/prometheus-customization -p;
             echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# replace environment variable"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
-            echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME) -p;
+            echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }} -p;
             echo "# creating thanos sidecar directory"; mkdir /persistent-volume/thanos -p;
             echo "# creating thanos store directory"; mkdir /persistent-volume/thanos-store -p;
             echo "# creating thanos compactor directory"; mkdir /persistent-volume/thanos-compactor -p;
@@ -92,7 +92,7 @@ spec:
                 fieldPath: spec.nodeName
         args:
           - 'sidecar'
-          - '--tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
+          - '--tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}'
           - '--prometheus.url=http://localhost:9090'
           - '--http-address=0.0.0.0:19191'
           - '--grpc-address=0.0.0.0:19090'
@@ -170,7 +170,7 @@ spec:
           - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-{{ $item.type }}-{{ $index }}-{{ $indexShard }}'
           {{ else }}
           - '--config.file=/persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml'
-          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)'
+          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}'
           - '--storage.tsdb.min-block-duration=2h'
           - '--storage.tsdb.max-block-duration=2h'
           {{ end }}
