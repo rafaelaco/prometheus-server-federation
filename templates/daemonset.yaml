@@ -101,6 +101,20 @@ spec:
             config:
               directory: "/persistent-volume/thanos"
           {{ end }}
+        livenessProbe:
+          failureThreshold: 4
+          httpGet:
+            path: /-/healthy
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 20
+          httpGet:
+            path: /-/ready
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 5
         volumeMounts:
           - name: prometheus-storage-volume
             mountPath: /persistent-volume

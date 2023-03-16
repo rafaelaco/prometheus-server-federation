@@ -28,8 +28,8 @@ spec:
                 fieldPath: spec.nodeName
         args:
           - 'query'
-          - '--http-address=0.0.0.0:19192'
-          - '--grpc-address=0.0.0.0:19092'
+          - '--http-address=0.0.0.0:19191'
+          - '--grpc-address=0.0.0.0:19090'
           {{ range $index, $item := .Values.prometheusInstances }}
           {{ if eq $item.type "replica" }}
           - '--store=dnssrv+_thanos-grpc._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
@@ -46,14 +46,14 @@ spec:
           failureThreshold: 4
           httpGet:
             path: /-/healthy
-            port: 9090
+            port: 19191
             scheme: HTTP
           periodSeconds: 30
         readinessProbe:
           failureThreshold: 20
           httpGet:
             path: /-/ready
-            port: 9090
+            port: 19191
             scheme: HTTP
           periodSeconds: 5
 {{ end }}
