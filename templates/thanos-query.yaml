@@ -30,8 +30,8 @@ spec:
           - 'query'
           - '--http-address=0.0.0.0:19192'
           - '--grpc-address=0.0.0.0:19092'
-          {{ if eq $item.type "replica" }}
           {{ range $index, $item := .Values.prometheusInstances }}
+          {{ if eq $item.type "replica" }}
           - '--store=dnssrv+_thanos-grpc._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
           - '--store=dnssrv+_thanos-grpc._tcp.prometheus-thanos-store-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
           {{ end }}
