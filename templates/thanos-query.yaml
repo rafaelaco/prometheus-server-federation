@@ -53,11 +53,6 @@ spec:
           {{ end }}
           {{ end }}
           - '--query.replica-label=replica'
-          {{ if .Values.externalLabels }}
-          {{ range $labelKey, $labelValue := .Values.externalLabels }}
-          - '--query.replica-label={{ $labelKey }}'
-          {{ end }}
-          {{ end }}
         livenessProbe:
           failureThreshold: 4
           httpGet:
