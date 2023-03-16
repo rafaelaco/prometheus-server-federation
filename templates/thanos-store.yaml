@@ -14,12 +14,14 @@ spec:
   selector:
     matchLabels:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 6 }}
+{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 6 }}
   template:
     metadata:
       annotations:
         sidecar.istio.io/inject: "false"
       labels:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 8 }}
+{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 8 }}
     spec:
       containers:
       - name: thanos-store

@@ -41,6 +41,7 @@ metadata:
 spec:
   selector:
 {{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 4 }}
+{{ printf "instance: %s-%d-%d" $item.type $index $indexShard | indent 4 }}
   type: ClusterIP
   clusterIP: None
   ports:
