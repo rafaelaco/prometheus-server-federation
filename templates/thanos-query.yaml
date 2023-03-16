@@ -29,9 +29,11 @@ spec:
         args:
           - 'query'
           - '--http-address=0.0.0.0:19192'
-          {{ range $index, $item := .Values.prometheusInstances }}
+          - '--grpc-address=0.0.0.0:19092'
           {{ if eq $item.type "replica" }}
-          - '--store=dnssrv+_thanos._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
+          {{ range $index, $item := .Values.prometheusInstances }}
+          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
+          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-thanos-store-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
           {{ end }}
           {{ end }}
           - '--query.replica-label=replica'
@@ -40,4 +42,18 @@ spec:
           - '--query.replica-label={{ $labelKey }}'
           {{ end }}
           {{ end }}
+        livenessProbe:
+          failureThreshold: 4
+          httpGet:
+            path: /-/healthy
+            port: 9090
+            scheme: HTTP
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 20
+          httpGet:
+            path: /-/ready
+            port: 9090
+            scheme: HTTP
+          periodSeconds: 5
 {{ end }}
