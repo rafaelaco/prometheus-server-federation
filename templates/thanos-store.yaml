@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: thanos-store
-        image: "{{ .Values.thanos.image.repository }}/thanos:{{ .Values.thanos.image.tag }}"
+        image: "{{ $.Values.thanos.image.repository }}/thanos:{{ $.Values.thanos.image.tag }}"
         env:
           - name: CURRENT_NODE_NAME
             valueFrom:
