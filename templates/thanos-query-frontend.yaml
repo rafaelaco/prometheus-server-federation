@@ -22,7 +22,7 @@ spec:
       - name: thanos-query-frontend
         image: "{{ .Values.thanos.image.repository }}/thanos:{{ .Values.thanos.image.tag }}"
         args:
-          - 'frontend'
+          - 'query-frontend'
           - '--http-address=0.0.0.0:19191'
           - '--query-frontend.downstream-url={{ include "common.name" . }}-thanos-query:19191'
         livenessProbe:
