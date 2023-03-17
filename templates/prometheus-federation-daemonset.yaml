@@ -61,10 +61,11 @@ spec:
         args:
           - echo "## STARTING";
             echo "# creating customization directory"; mkdir /persistent-volume/prometheus-customization -p;
-            echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
+            echo "# copying default prometheus configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# replace environment variable default prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             {{ if eq $.Values.thanos.enabled true }}
-            echo "# replace environment variable federation prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /etc/prometheus/prometheus-thanos-federation.yml;
+            echo "# copying federation prometheus configuration file"; cp /etc/prometheus/prometheus-thanos-federation.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME)-federate.yml;
+            echo "# replace environment variable federation prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME)-federate.yml;
             {{ end }}
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }} -p;
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate -p;
@@ -130,7 +131,7 @@ spec:
         args:
           - '--storage.tsdb.retention.time={{ default "2h" $item.storageTsdbRetentionTime }}'
           - '--storage.tsdb.retention.size={{ default "50GB" $item.storageTsdbRetentionSize }}'
-          - '--config.file=/etc/prometheus/prometheus-thanos-federation.yml'
+          - '--config.file=/persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME)-federate.yml'
           - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate'
           - '--storage.tsdb.min-block-duration=2h'
           - '--storage.tsdb.max-block-duration=2h'
