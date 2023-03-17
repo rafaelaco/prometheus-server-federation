@@ -1,5 +1,7 @@
 {{- range $index, $item := .Values.prometheusInstances }}
 {{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
+{{- if and (eq $.Values.thanos.enabled true) (eq $item.type "primary") }}
+{{- else }}
 ---
 apiVersion: v1
 kind: PersistentVolume
@@ -13,7 +15,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   {{ if eq $.Values.developmentMode true }}
   hostPath:
-    path: {{ $.Values.developmentHostPath }}/{{ $item.type }}-{{ $index }}-{{ $indexShard }}/
+    path: {{ $.Values.developmentHostPath }}
   storageClassName: manual
   {{ else }}
   storageClassName: azurefile-csi
@@ -53,5 +55,6 @@ spec:
   {{ else }}
   storageClassName: azurefile-csi
   {{ end }}
+{{- end }}
 {{- end }}
 {{- end }}

@@ -1,0 +1,56 @@
+{{- if eq .Values.thanos.enabled true }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.name" . }}-thanos-query
+  labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 4 }}
+spec:
+  replicas: {{ .Values.thanos.query.replicas }}
+  selector:
+    matchLabels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 6 }}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query") | indent 8 }}
+    spec:
+      containers:
+      - name: thanos-query
+        image: "{{ .Values.thanos.image.repository }}/thanos:{{ .Values.thanos.image.tag }}"
+        env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        args:
+          - 'query'
+          - '--http-address=0.0.0.0:19191'
+          - '--grpc-address=0.0.0.0:19090'
+          {{ range $index, $item := .Values.prometheusInstances }}
+          {{ if eq $item.type "replica" }}
+          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-replica-{{ $index }}-0.{{ $.Release.Namespace }}.svc'
+          {{ end }}
+          {{ end }}
+          {{ if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.store.enabled true) }}
+          - '--store=dnssrv+_thanos-grpc._tcp.prometheus-thanos-store.{{ $.Release.Namespace }}.svc'
+          {{ end }}
+          - '--query.replica-label=replica'
+        livenessProbe:
+          failureThreshold: 4
+          httpGet:
+            path: /-/healthy
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 20
+          httpGet:
+            path: /-/ready
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 5
+{{ end }}

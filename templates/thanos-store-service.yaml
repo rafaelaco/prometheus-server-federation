@@ -1,0 +1,19 @@
+{{- if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.store.enabled true) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}-thanos-store
+spec:
+  selector:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-store") | indent 4 }}
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: thanos-http
+      port: 19191
+      targetPort: 19191
+    - name: thanos-grpc
+      port: 19090
+      targetPort: 19090
+{{- end }}

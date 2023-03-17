@@ -1,5 +1,7 @@
 {{- range $index, $item := .Values.prometheusInstances }}
 {{- range $indexShard, $e := until (int (coalesce $item.shards 1)) }}
+{{- if and (eq $.Values.thanos.enabled true) (eq $item.type "primary") }}
+{{- else }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -10,6 +12,56 @@ data:
   rules.yml: |
 {{ $.Files.Get $item.rulesFile | indent 4 }}
 {{ end }}
+
+  {{ if eq $.Values.thanos.enabled true }}
+  prometheus-thanos-federation.yml: |
+    global:
+      scrape_interval: {{ default "1m" $.Values.thanos.federation.scrapeInterval }}
+      scrape_timeout: {{ default "30s" $.Values.thanos.federation.scrapeTimeout }}
+      evaluation_interval: {{ default "10m" $.Values.thanos.federation.evaluationInterval }}
+      external_labels:
+        {{ if $.Values.externalLabels }}
+        {{ range $labelKey, $labelValue := $.Values.externalLabels }}
+        {{ $labelKey }}: {{ $labelValue }}
+        {{ end }}
+        {{ end }}
+        replica: ${CURRENT_NODE_NAME}-{{ $index }}
+
+    scrape_configs:
+    - job_name: prometheus
+      honor_timestamps: true
+      metrics_path: /metrics
+      scheme: http
+      follow_redirects: true
+      enable_http2: true
+      static_configs:
+      - targets:
+        - localhost:9000
+    - job_name: federate
+      metrics_path: '/federate'
+      honor_labels: true
+      params:
+        'match[]':
+          - '{__name__=~"workload:(.*)"}'
+          - '{__name__=~"instance:(.*)"}'
+      metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'workload:(.*)'
+        target_label: __name__
+        action: replace
+      - source_labels: [__name__]
+        regex: 'instance:(.*)'
+        target_label: __name__
+        action: replace
+      relabel_configs:
+        - action: drop
+          regex: "prometheus-init"
+          source_labels:
+          - __meta_kubernetes_pod_container_name
+      static_configs:
+        - targets:
+          - 'localhost:9090'
+  {{ end }}
 
   prometheus.yml: |
     {{ if eq $item.type "primary" }}
@@ -66,11 +118,6 @@ data:
       {{ if $item.shards }}
       external_labels:
         shard: {{ $indexShard }}
-      {{ else }}
-      external_labels:
-        {{ range $labelKey, $labelValue := $.Values.externalLabels }}
-        {{ $labelKey }}: {{ $labelValue }}
-        {{ end }}
       {{ end }}
 
     rule_files:
@@ -184,5 +231,6 @@ data:
           - __meta_kubernetes_pod_node_name
     {{ end }}
     {{ end }}
+{{- end }}
 {{- end }}
 {{- end }}
