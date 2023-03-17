@@ -1,0 +1,42 @@
+{{- if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.queryFrontend.enabled true) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "common.name" . }}-thanos-query-frontend
+  labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query-frontend") | indent 4 }}
+spec:
+  replicas: {{ .Values.thanos.queryFrontend.replicas }}
+  selector:
+    matchLabels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query-frontend") | indent 6 }}
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query-frontend") | indent 8 }}
+    spec:
+      containers:
+      - name: thanos-query-frontend
+        image: "{{ .Values.thanos.image.repository }}/thanos:{{ .Values.thanos.image.tag }}"
+        args:
+          - 'frontend'
+          - '--http-address=0.0.0.0:19191'
+          - '--query-frontend.downstream-url={{ include "common.name" . }}-thanos-query:19191'
+        livenessProbe:
+          failureThreshold: 4
+          httpGet:
+            path: /-/healthy
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 30
+        readinessProbe:
+          failureThreshold: 20
+          httpGet:
+            path: /-/ready
+            port: 19191
+            scheme: HTTP
+          periodSeconds: 5
+{{ end }}

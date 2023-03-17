@@ -1,0 +1,15 @@
+{{- if and (eq $.Values.thanos.enabled true) (eq $.Values.thanos.queryFrontend.enabled true) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "common.name" . }}-thanos-query-frontend
+spec:
+  type: ClusterIP
+  ports:
+    - name: thanos-http
+      port: 19191
+      targetPort: 19191
+  selector:
+{{ include "common.selectorLabels" (dict "releaseName" "thanos-query-frontend") | indent 4 }}
+{{- end }}

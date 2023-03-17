@@ -27,6 +27,9 @@ thanos:
   federation:
     scrapeInterval: 1m
     scrapeTimeout: 15s
+  queryFrontend:
+    enabled: true
+    replicas: 1
   query:
     replicas: 1
   store:
