@@ -64,7 +64,7 @@ spec:
             echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# replace environment variable default prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             {{ if eq $.Values.thanos.enabled true }}
-            echo "# replace environment variable federation prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /etc/prometheus-thanos-federation.yml;
+            echo "# replace environment variable federation prometheus"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /etc/prometheus/prometheus-thanos-federation.yml;
             {{ end }}
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }} -p;
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate -p;
