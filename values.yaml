@@ -78,7 +78,7 @@ prometheusInstances:
         labelsToScrape: ["k8s-app=kube-dns"]
       - namespacesToScrape: [default, microservices]
 
-### Instances configuration - Fixed instances option (replicaDaemonSet=false)
+### Instances configuration - Fixed instances option (replicaDaemonSet=false) - DEPRECATED
 # You have to configure only one with the type=primary
 # And you can configure as many as you want of the type=replica
 # The "shards" value inside the "jobs" will split the discovery endpoint between instances
