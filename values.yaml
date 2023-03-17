@@ -30,7 +30,7 @@ thanos:
     enabled: true
   compactor:
     enabled: true
-    schedule: "* * * * *"
+    schedule: "0 02 * * *"
 
 # Image repository and version
 image:
