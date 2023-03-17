@@ -24,7 +24,7 @@ spec:
         args:
           - 'query-frontend'
           - '--http-address=0.0.0.0:19191'
-          - '--query-frontend.downstream-url={{ include "common.name" . }}-thanos-query:19191'
+          - '--query-frontend.downstream-url=http://{{ include "common.name" . }}-thanos-query:19191'
         livenessProbe:
           failureThreshold: 4
           httpGet:
