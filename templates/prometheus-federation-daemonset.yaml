@@ -64,6 +64,7 @@ spec:
             echo "# copying configuration file"; cp /etc/prometheus/prometheus.yml /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# replace environment variable"; sed -i 's/${CURRENT_NODE_NAME}/$(CURRENT_NODE_NAME)/g' /persistent-volume/prometheus-customization/$(CURRENT_NODE_NAME).yml;
             echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }} -p;
+            echo "# creating persistent directory"; mkdir /persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate -p;
             echo "# creating thanos sidecar directory"; mkdir /persistent-volume/thanos -p;
             echo "# creating thanos store directory"; mkdir /persistent-volume/thanos-store -p;
             echo "# creating thanos compactor directory"; mkdir /persistent-volume/thanos-compactor -p;
@@ -82,7 +83,65 @@ spec:
           readOnly: false
       containers:
       {{ if eq $item.type "replica" }}
-      {{ if $.Values.thanos.enabled }}
+      {{ if eq $.Values.thanos.enabled true }}
+      - name: {{ include "common.name" . }}-federate
+        env:
+          - name: CURRENT_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+        {{ if $item.environmentVariables }}
+          {{ range $env := $item.environmentVariables }}
+          - name: {{ $env.name | quote }}
+            value: {{ $env.value | quote }}
+          {{ end }}
+        {{ end }}
+        resources:
+          limits:
+            cpu: {{ default "500m" $item.federateResourcesLimitsCpu }}
+            memory: {{ default "1024Mi" $item.federateResourcesLimitsMemory }}
+          requests:
+            cpu: {{ default "150m" $item.federateResourcesRequestsCpu }}
+            memory: {{ default "512Mi" $item.federateResourcesRequestsMemory }}
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: {{ $.Values.readinessProbeInitialDelaySeconds }}
+          periodSeconds: {{ $.Values.readinessProbePeriodSeconds }}
+          timeoutSeconds: {{ $.Values.readinessProbeTimeoutSeconds }}
+          failureThreshold: {{ $.Values.readinessProbeFailureThreshold }}
+          successThreshold: {{ $.Values.readinessProbeSuccessThreshold }}
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9000
+            scheme: HTTP
+          initialDelaySeconds: {{ $.Values.livenessProbeInitialDelaySeconds }}
+          periodSeconds: {{ $.Values.livenessProbePeriodSeconds }}
+          timeoutSeconds: {{ $.Values.livenessProbeTimeoutSeconds }}
+          failureThreshold: {{ $.Values.livenessProbeFailureThreshold }}
+          successThreshold: {{ $.Values.livenessProbeSuccessThreshold }}
+        image: "{{ $.Values.image.repository }}/prometheus:{{ $.Values.image.tag }}"
+        args:
+          - '--storage.tsdb.retention.time={{ default "2h" $item.storageTsdbRetentionTime }}'
+          - '--storage.tsdb.retention.size={{ default "50GB" $item.storageTsdbRetentionSize }}'
+          - '--config.file=/etc/prometheus/prometheus-thanos-federation.yml'
+          - '--storage.tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate'
+          - '--storage.tsdb.min-block-duration=2h'
+          - '--storage.tsdb.max-block-duration=2h'
+          - '--query.timeout={{ default "10s" $item.queryTimeout }}'
+          - '--web.listen-address=0.0.0.0:9000'
+        ports:
+        - name: prometheus
+          containerPort: 9000
+        volumeMounts:
+        - name: prometheus-config
+          mountPath: /etc/prometheus
+        - name: prometheus-storage-volume
+          mountPath: /persistent-volume
+          readOnly: false
       - name: thanos-sidecar
         image: "{{ $.Values.thanos.image.repository }}/thanos:{{ $.Values.thanos.image.tag }}"
         env:
@@ -92,8 +151,8 @@ spec:
                 fieldPath: spec.nodeName
         args:
           - 'sidecar'
-          - '--tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}'
-          - '--prometheus.url=http://localhost:9090'
+          - '--tsdb.path=/persistent-volume/{{ include "common.name" . }}-$(CURRENT_NODE_NAME)-{{ $index }}-federate'
+          - '--prometheus.url=http://localhost:9000'
           - '--http-address=0.0.0.0:19191'
           - '--grpc-address=0.0.0.0:19090'
           {{ if eq $.Values.developmentMode true }}

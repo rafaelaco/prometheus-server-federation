@@ -24,6 +24,9 @@ thanos:
     tag: v0.30.2
     pullPolicy: IfNotPresent
     pullSecrets: []
+  federation:
+    scrapeInterval: 1m
+    scrapeTimeout: 15s
   query:
     replicas: 1
   store:
