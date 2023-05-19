@@ -115,8 +115,9 @@ data:
       scrape_interval: {{ default "1m" $item.scrapeInterval }}
       scrape_timeout: {{ default "5s" $item.scrapeTimeout }}
       evaluation_interval: {{ default "10m" $item.evaluationInterval }}
-      {{ if $item.shards }}
       external_labels:
+        instance: ${CURRENT_NODE_NAME}
+      {{ if $item.shards }}
         shard: {{ $indexShard }}
       {{ end }}
 
